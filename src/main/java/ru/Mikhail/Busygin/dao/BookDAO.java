@@ -1,43 +1,39 @@
 package ru.Mikhail.Busygin.dao;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.Mikhail.Busygin.models.Book;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
 public class BookDAO {
-    private static int BOOK_COUNT;
-    private List<Book> books;
-
-    {
-        books = new ArrayList<>();
-
-        books.add(new Book(++BOOK_COUNT, "silver fang"));
-        books.add(new Book(++BOOK_COUNT, "atomic samurai"));
-        books.add(new Book(++BOOK_COUNT, "king"));
+    private final JdbcTemplate jdbcTemplate;
+    @Autowired
+    public BookDAO(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<Book> showBooks() {
-        return books;
+        return jdbcTemplate.query("SELECT * FROM book", new BeanPropertyRowMapper<>(Book.class));
     }
 
     public Book showBook(int id) {
-        return books.stream().filter(book -> book.getId() == id).findAny().orElse(null);
+        return jdbcTemplate.query("SELECT * FROM book WHERE id=?", new Object[]{id}, new BeanPropertyRowMapper<>(Book.class))
+                .stream().findAny().orElse(null);
     }
 
     public void createBook(Book book) {
-        book.setId(++BOOK_COUNT);
-        books.add(book);
+        jdbcTemplate.update("INSERT INTO book(name) VALUES(?)", book.getName());
     }
 
     public void updateBook(int id, Book updatedBook) {
-        Book bookToBeUpdated = showBook(id);
-        bookToBeUpdated.setName(updatedBook.getName());
+        jdbcTemplate.update("UPDATE book SET name=? WHERE id=?", updatedBook.getName(), id);
     }
 
     public void deleteBook(int id) {
-        books.removeIf(book -> book.getId() == id);
+        jdbcTemplate.update("DELETE FROM book WHERE id=?", id);
     }
 }
